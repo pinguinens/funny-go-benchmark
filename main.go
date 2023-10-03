@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"runtime"
 	"sync"
@@ -9,18 +10,23 @@ import (
 )
 
 const (
-	multiplier = 1024 * 2
-	kiloByte   = 1024
+	kiloByte = 1024
 )
 
 var (
-	buffer chan [][1024]byte
+	multiplier int
+	buffer     chan [][1024]byte
 )
+
+func init() {
+	flag.IntVar(&multiplier, "b", 1, "buffer memory size in MB")
+	flag.Parse()
+}
 
 func main() {
 	fmt.Println("Funny Go Benchmark")
 
-	cores := runtime.NumCPU()
+	cores := runtime.NumCPU() - 6
 	fmt.Printf("CPU count: %v\n", cores)
 
 	bufferSize := kiloByte * multiplier
@@ -38,11 +44,11 @@ func main() {
 	routineBufSize := make(chan int, cores)
 	portionSize := bufferSize / cores
 	for i := 0; i < cores; i++ {
-		go func(ps int) {
+		go func(ps, id int) {
 			defer wg.Done()
 
 			bs, meter := prettyBytesValue(uint64(ps * kiloByte))
-			fmt.Printf("target routine buffer size: %.2f %v\n", bs, meter)
+			fmt.Printf("[%v] target routine buffer size: %.2f %v\n", id, bs, meter)
 
 			rBuffer := make([][1024]byte, 0, portionSize)
 			for i := 0; i < ps; i++ {
@@ -51,7 +57,7 @@ func main() {
 
 			routineBufSize <- size.Of(rBuffer)
 			buffer <- rBuffer
-		}(portionSize)
+		}(portionSize, i)
 	}
 
 	wgB := sync.WaitGroup{}
