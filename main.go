@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"runtime"
 	"sync"
+	"time"
 
 	"github.com/DmitriyVTitov/size"
 )
@@ -15,23 +16,26 @@ const (
 
 var (
 	multiplier int
+	cores      int
 	buffer     chan [][1024]byte
 )
 
 func init() {
 	flag.IntVar(&multiplier, "b", 1, "buffer memory size in MB")
+	flag.IntVar(&cores, "c", runtime.NumCPU(), "CPU cores")
 	flag.Parse()
 }
 
 func main() {
 	fmt.Println("Funny Go Benchmark")
 
-	cores := runtime.NumCPU() - 6
 	fmt.Printf("CPU count: %v\n", cores)
 
 	bufferSize := kiloByte * multiplier
 	bs, meter := prettyBytesValue(uint64(bufferSize * kiloByte))
 	fmt.Printf("target buffer size: %.2f %v\n", bs, meter)
+
+	timer := time.Now()
 
 	go func(limit int) {
 		buffer = make(chan [][1024]byte, limit)
@@ -79,6 +83,8 @@ func main() {
 	wg.Wait()
 	close(routineBufSize)
 	wgB.Wait()
+
+	fmt.Printf("test duration: %v\n", time.Now().Sub(timer))
 }
 
 func prettyBytesValue(v uint64) (float32, string) {
