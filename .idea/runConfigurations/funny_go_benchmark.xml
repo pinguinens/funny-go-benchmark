@@ -2,6 +2,7 @@
   <configuration default="false" name="funny_go_benchmark" type="GoApplicationRunConfiguration" factoryName="Go Application">
     <module name="funny-go-benchmark" />
     <working_directory value="$PROJECT_DIR$" />
+    <parameters value="-c 30 -b 7680" />
     <EXTENSION ID="net.ashald.envfile">
       <option name="IS_ENABLED" value="false" />
       <option name="IS_SUBST" value="false" />

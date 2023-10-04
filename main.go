@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"runtime"
 	"sync"
-
-	"github.com/DmitriyVTitov/size"
+	"time"
+	"unsafe"
+	//"github.com/DmitriyVTitov/size"
 )
 
 const (
@@ -15,23 +16,26 @@ const (
 
 var (
 	multiplier int
+	cores      int
 	buffer     chan [][1024]byte
 )
 
 func init() {
 	flag.IntVar(&multiplier, "b", 1, "buffer memory size in MB")
+	flag.IntVar(&cores, "c", runtime.NumCPU(), "CPU cores")
 	flag.Parse()
 }
 
 func main() {
 	fmt.Println("Funny Go Benchmark")
 
-	cores := runtime.NumCPU() - 6
 	fmt.Printf("CPU count: %v\n", cores)
 
 	bufferSize := kiloByte * multiplier
-	bs, meter := prettyBytesValue(uint64(bufferSize * kiloByte))
+	bs, meter := prettyBytesValue(bufferSize * kiloByte)
 	fmt.Printf("target buffer size: %.2f %v\n", bs, meter)
+
+	timer := time.Now()
 
 	go func(limit int) {
 		buffer = make(chan [][1024]byte, limit)
@@ -40,36 +44,40 @@ func main() {
 	var arr [1024]byte
 	wg := sync.WaitGroup{}
 	wg.Add(cores)
-
 	routineBufSize := make(chan int, cores)
 	portionSize := bufferSize / cores
 	for i := 0; i < cores; i++ {
 		go func(ps, id int) {
 			defer wg.Done()
 
-			bs, meter := prettyBytesValue(uint64(ps * kiloByte))
+			bs, meter := prettyBytesValue(ps * kiloByte)
 			fmt.Printf("[%v] target routine buffer size: %.2f %v\n", id, bs, meter)
 
+			var rSize int
 			rBuffer := make([][1024]byte, 0, portionSize)
 			for i := 0; i < ps; i++ {
+				for _, in := range arr {
+					rSize += int(unsafe.Sizeof(in))
+				}
 				rBuffer = append(rBuffer, arr)
 			}
 
-			routineBufSize <- size.Of(rBuffer)
+			routineBufSize <- rSize
+			//routineBufSize <- size.Of(rBuffer)
 			buffer <- rBuffer
 		}(portionSize, i)
 	}
 
 	wgB := sync.WaitGroup{}
 	wgB.Add(1)
-	var resultBufSize uint64
+	var resultBufSize int
 	go func() {
 		defer wgB.Done()
 
 		for s := range routineBufSize {
-			bs, meter := prettyBytesValue(uint64(s))
+			bs, meter := prettyBytesValue(s)
 			fmt.Printf("routine buffer size: %.2f %v\n", bs, meter)
-			resultBufSize += uint64(s)
+			resultBufSize += s
 		}
 
 		bs, meter = prettyBytesValue(resultBufSize)
@@ -79,9 +87,11 @@ func main() {
 	wg.Wait()
 	close(routineBufSize)
 	wgB.Wait()
+
+	fmt.Printf("test duration: %v\n", time.Now().Sub(timer))
 }
 
-func prettyBytesValue(v uint64) (float32, string) {
+func prettyBytesValue(v int) (float32, string) {
 	temp := float32(v)
 	m := "Bytes"
 
