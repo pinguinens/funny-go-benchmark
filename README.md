@@ -8,7 +8,7 @@ Synthetic benchmark for fun. It tests whole system memory (CPU cache, RAM, SWAP)
 
 Run
 
-``$ . funny_go_benchmark -c 2 -b 2048``
+``$ go run . -c 2 -b 2048``
 
 ### Options
 
