@@ -2,46 +2,42 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"runtime"
 	"sync"
 	"time"
 	"unsafe"
-	//"github.com/DmitriyVTitov/size"
-)
 
-const (
-	kiloByte = 1024
+	"github.com/pinguinens/funny-go-benchmark/pkg/log"
+	"github.com/pinguinens/funny-go-benchmark/pkg/units"
 )
 
 var (
-	multiplier int
-	cores      int
-	buffer     chan [][1024]byte
+	buffer chan [][units.Kilobyte]byte
 )
 
-func init() {
+func main() {
+	var (
+		multiplier int
+		cores      int
+	)
 	flag.IntVar(&multiplier, "b", 1, "buffer memory size in MB")
 	flag.IntVar(&cores, "c", runtime.NumCPU(), "CPU cores")
 	flag.Parse()
-}
 
-func main() {
-	fmt.Println("Funny Go Benchmark")
+	logger := log.Logger{}
 
-	fmt.Printf("CPU count: %v\n", cores)
+	logger.Info("Funny Go Benchmark")
+	logger.Infof("CPU count: %v", cores)
 
-	bufferSize := kiloByte * multiplier
-	bs, meter := prettyBytesValue(bufferSize * kiloByte)
-	fmt.Printf("target buffer size: %.2f %v\n", bs, meter)
+	bufferSize := units.Kilobyte * multiplier
+	bs, unit := units.FormatPrettyBytes(bufferSize * units.Kilobyte)
+	logger.Infof("target buffer size: %.2f %v\n", bs, unit)
 
 	timer := time.Now()
 
-	go func(limit int) {
-		buffer = make(chan [][1024]byte, limit)
-	}(cores)
+	buffer = make(chan [][units.Kilobyte]byte, cores)
 
-	var arr [1024]byte
+	var arr [units.Kilobyte]byte
 	wg := sync.WaitGroup{}
 	wg.Add(cores)
 	routineBufSize := make(chan int, cores)
@@ -50,11 +46,11 @@ func main() {
 		go func(ps, id int) {
 			defer wg.Done()
 
-			bs, meter := prettyBytesValue(ps * kiloByte)
-			fmt.Printf("[%v] target routine buffer size: %.2f %v\n", id, bs, meter)
+			bs, unit := units.FormatPrettyBytes(ps * units.Kilobyte)
+			logger.Infof("[%v] target routine buffer size: %.2f %v\n", id, bs, unit)
 
 			var rSize int
-			rBuffer := make([][1024]byte, 0, portionSize)
+			rBuffer := make([][units.Kilobyte]byte, 0, portionSize)
 			for i := 0; i < ps; i++ {
 				for _, in := range arr {
 					rSize += int(unsafe.Sizeof(in))
@@ -63,7 +59,6 @@ func main() {
 			}
 
 			routineBufSize <- rSize
-			//routineBufSize <- size.Of(rBuffer)
 			buffer <- rBuffer
 		}(portionSize, i)
 	}
@@ -75,46 +70,18 @@ func main() {
 		defer wgB.Done()
 
 		for s := range routineBufSize {
-			bs, meter := prettyBytesValue(s)
-			fmt.Printf("routine buffer size: %.2f %v\n", bs, meter)
+			bs, unit := units.FormatPrettyBytes(s)
+			logger.Infof("routine buffer size: %.2f %v\n", bs, unit)
 			resultBufSize += s
 		}
 
-		bs, meter = prettyBytesValue(resultBufSize)
-		fmt.Printf("total buffer size: %.2f %v\n", bs, meter)
+		bs, unit = units.FormatPrettyBytes(resultBufSize)
+		logger.Infof("total buffer size: %.2f %v\n", bs, unit)
 	}()
 
 	wg.Wait()
 	close(routineBufSize)
 	wgB.Wait()
 
-	fmt.Printf("test duration: %v\n", time.Now().Sub(timer))
-}
-
-func prettyBytesValue(v int) (float32, string) {
-	temp := float32(v)
-	m := "Bytes"
-
-	if temp >= kiloByte {
-		temp = temp / kiloByte
-		m = "KB"
-	} else {
-		return temp, m
-	}
-
-	if temp >= kiloByte {
-		temp = temp / kiloByte
-		m = "MB"
-	} else {
-		return temp, m
-	}
-
-	if temp >= kiloByte {
-		temp = temp / kiloByte
-		m = "GB"
-	} else {
-		return temp, m
-	}
-
-	return temp, m
+	logger.Infof("test duration: %v\n", time.Now().Sub(timer))
 }
