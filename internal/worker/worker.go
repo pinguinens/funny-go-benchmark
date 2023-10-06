@@ -20,7 +20,7 @@ func New(id, bufferSize int) *Worker {
 	}
 }
 
-func (w *Worker) Run(b *buffer.Buffer) int {
+func (w *Worker) Run(b *buffer.Buffer) *Result {
 	var (
 		arr   [units.Kilobyte]byte
 		wSize int
@@ -34,7 +34,10 @@ func (w *Worker) Run(b *buffer.Buffer) int {
 	}
 
 	b.Input(w.buffer)
-	return wSize
+	return &Result{
+		bufSize:  wSize,
+		workerID: w.ID(),
+	}
 }
 
 func (w *Worker) ID() int {

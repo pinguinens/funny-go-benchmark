@@ -46,7 +46,7 @@ func (s *Service) Run() {
 
 	wg := sync.WaitGroup{}
 	wg.Add(len(s.workers))
-	routineBufSize := make(chan int, len(s.workers))
+	results := make(chan *worker.Result, len(s.workers))
 	for _, w := range s.workers {
 		go func(wrk *worker.Worker) {
 			defer wg.Done()
@@ -54,7 +54,7 @@ func (s *Service) Run() {
 			bs, unit := units.FormatPrettyBytes(wrk.BufferCap() * units.Kilobyte)
 			s.logger.Infof("[%v] target routine buffer size: %.2f %v", wrk.ID(), bs, unit)
 
-			routineBufSize <- wrk.Run(s.buffer)
+			results <- wrk.Run(s.buffer)
 		}(w)
 	}
 
@@ -64,10 +64,10 @@ func (s *Service) Run() {
 	go func() {
 		defer wgB.Done()
 
-		for rbs := range routineBufSize {
-			bs, unit := units.FormatPrettyBytes(rbs)
-			s.logger.Infof("routine buffer size: %.2f %v", bs, unit)
-			resultBufSize += rbs
+		for wr := range results {
+			bs, unit := units.FormatPrettyBytes(wr.BufferSize())
+			s.logger.Infof("[%v] routine buffer size: %.2f %v", wr.WorkerID(), bs, unit)
+			resultBufSize += wr.BufferSize()
 		}
 
 		bs, unit = units.FormatPrettyBytes(resultBufSize)
@@ -75,7 +75,7 @@ func (s *Service) Run() {
 	}()
 
 	wg.Wait()
-	close(routineBufSize)
+	close(results)
 	wgB.Wait()
 	timer1.Stop()
 
