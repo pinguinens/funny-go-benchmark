@@ -2,12 +2,12 @@ package main
 
 import (
 	"sync"
-	"time"
 	"unsafe"
 
 	"github.com/pinguinens/funny-go-benchmark/internal/config"
 
 	"github.com/pinguinens/funny-go-benchmark/pkg/log"
+	"github.com/pinguinens/funny-go-benchmark/pkg/timer"
 	"github.com/pinguinens/funny-go-benchmark/pkg/units"
 )
 
@@ -25,9 +25,10 @@ func main() {
 
 	bufferSize := units.Kilobyte * appCfg.Buffer.Multiplier
 	bs, unit := units.FormatPrettyBytes(bufferSize * units.Kilobyte)
-	logger.Infof("target buffer size: %.2f %v\n", bs, unit)
+	logger.Infof("target buffer size: %.2f %v", bs, unit)
 
-	timer := time.Now()
+	timer := timer.Timer{}
+	timer.Start()
 
 	buffer = make(chan [][units.Kilobyte]byte, appCfg.System.CoreCount)
 
@@ -41,7 +42,7 @@ func main() {
 			defer wg.Done()
 
 			bs, unit := units.FormatPrettyBytes(ps * units.Kilobyte)
-			logger.Infof("[%v] target routine buffer size: %.2f %v\n", id, bs, unit)
+			logger.Infof("[%v] target routine buffer size: %.2f %v", id, bs, unit)
 
 			var rSize int
 			rBuffer := make([][units.Kilobyte]byte, 0, portionSize)
@@ -65,17 +66,18 @@ func main() {
 
 		for s := range routineBufSize {
 			bs, unit := units.FormatPrettyBytes(s)
-			logger.Infof("routine buffer size: %.2f %v\n", bs, unit)
+			logger.Infof("routine buffer size: %.2f %v", bs, unit)
 			resultBufSize += s
 		}
 
 		bs, unit = units.FormatPrettyBytes(resultBufSize)
-		logger.Infof("total buffer size: %.2f %v\n", bs, unit)
+		logger.Infof("total buffer size: %.2f %v", bs, unit)
 	}()
 
 	wg.Wait()
 	close(routineBufSize)
 	wgB.Wait()
+	timer.Stop()
 
-	logger.Infof("test duration: %v\n", time.Now().Sub(timer))
+	logger.Infof("test duration: %v", timer.Result())
 }
