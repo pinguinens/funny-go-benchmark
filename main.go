@@ -1,11 +1,11 @@
 package main
 
 import (
-	"flag"
-	"runtime"
 	"sync"
 	"time"
 	"unsafe"
+
+	"github.com/pinguinens/funny-go-benchmark/internal/config"
 
 	"github.com/pinguinens/funny-go-benchmark/pkg/log"
 	"github.com/pinguinens/funny-go-benchmark/pkg/units"
@@ -16,33 +16,27 @@ var (
 )
 
 func main() {
-	var (
-		multiplier int
-		cores      int
-	)
-	flag.IntVar(&multiplier, "b", 1, "buffer memory size in MB")
-	flag.IntVar(&cores, "c", runtime.NumCPU(), "CPU cores")
-	flag.Parse()
+	appCfg := config.New()
 
 	logger := log.Logger{}
 
 	logger.Info("Funny Go Benchmark")
-	logger.Infof("CPU count: %v", cores)
+	logger.Infof("CPU count: %v", appCfg.System.CoreCount)
 
-	bufferSize := units.Kilobyte * multiplier
+	bufferSize := units.Kilobyte * appCfg.Buffer.Multiplier
 	bs, unit := units.FormatPrettyBytes(bufferSize * units.Kilobyte)
 	logger.Infof("target buffer size: %.2f %v\n", bs, unit)
 
 	timer := time.Now()
 
-	buffer = make(chan [][units.Kilobyte]byte, cores)
+	buffer = make(chan [][units.Kilobyte]byte, appCfg.System.CoreCount)
 
 	var arr [units.Kilobyte]byte
 	wg := sync.WaitGroup{}
-	wg.Add(cores)
-	routineBufSize := make(chan int, cores)
-	portionSize := bufferSize / cores
-	for i := 0; i < cores; i++ {
+	wg.Add(appCfg.System.CoreCount)
+	routineBufSize := make(chan int, appCfg.System.CoreCount)
+	portionSize := bufferSize / appCfg.System.CoreCount
+	for i := 0; i < appCfg.System.CoreCount; i++ {
 		go func(ps, id int) {
 			defer wg.Done()
 
