@@ -16,16 +16,18 @@ type Tester struct {
 	workers []*Worker
 }
 
-func (t *Tester) Init(logger *log.Logger, buffer *buffer.Buffer, routines int) {
-	t.logger = logger
-	t.buffer = buffer
-	t.workers = t.makeWorkers(routines)
+func New(logger *log.Logger, buffer *buffer.Buffer, routines int) *Tester {
+	return &Tester{
+		logger:  logger,
+		buffer:  buffer,
+		workers: makeWorkers(buffer.Size(), routines),
+	}
 }
 
-func (t *Tester) makeWorkers(routines int) []*Worker {
-	workers := make([]*Worker, routines)
-	workerBuf := t.buffer.Size() / routines
-	for i := 0; i < routines; i++ {
+func makeWorkers(bs, rcount int) []*Worker {
+	workers := make([]*Worker, rcount)
+	workerBuf := bs / rcount
+	for i := 0; i < rcount; i++ {
 		workers[i] = &Worker{
 			id:     i,
 			buffer: make([][units.Kilobyte]byte, 0, workerBuf),

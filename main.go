@@ -11,9 +11,9 @@ import (
 func main() {
 	appCfg := config.New()
 	logger := log.Logger{}
+	logger.Info("== Funny Go Benchmark v.0.2 ==")
 
-	test := memory.Tester{}
-
-	rn := runner.New(appCfg, &logger)
-	rn.Run(&test)
+	rn := runner.New(appCfg)
+	test := memory.New(&logger, rn.Buffer(), appCfg.System.CoreCount)
+	rn.Run(test)
 }
