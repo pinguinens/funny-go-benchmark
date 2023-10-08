@@ -1,4 +1,4 @@
-package worker
+package memory
 
 import (
 	"unsafe"
@@ -11,13 +11,6 @@ import (
 type Worker struct {
 	id     int
 	buffer [][units.Kilobyte]byte
-}
-
-func New(id, bufferSize int) *Worker {
-	return &Worker{
-		id:     id,
-		buffer: make([][units.Kilobyte]byte, 0, bufferSize),
-	}
 }
 
 func (w *Worker) Run(b *buffer.Buffer) *Result {

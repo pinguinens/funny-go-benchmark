@@ -1,4 +1,4 @@
-package worker
+package memory
 
 type Result struct {
 	bufSize  int
