@@ -7,6 +7,7 @@ import (
 	"hash/adler32"
 	"hash/crc32"
 	"hash/crc64"
+	"hash/fnv"
 	"sync"
 	"time"
 )
@@ -133,6 +134,258 @@ func (t *Tester) Run() {
 			go func() {
 				for cont {
 					hObj := crc64.New(crc64.MakeTable(crc64.ISO))
+					n, err = hObj.Write(testload)
+					if err != nil {
+						t.logger.Info(err)
+					}
+					r = hObj.Sum(nil)
+
+					counter++
+				}
+			}()
+
+			time.Sleep(1 * time.Second)
+			wg.Done()
+		}()
+
+		wg.Wait()
+		cont = false
+		count := counter
+
+		ti.Stop()
+		t.logger.Infof("- %v:%x", n, r)
+		t.logger.Infof("time: %v", ti.Result())
+		t.logger.Infof("count: %v", count)
+	}
+
+	{
+		t.logger.Info("---\n FNV-1 32")
+		var (
+			n       int
+			r       []byte
+			err     error
+			counter uint64
+		)
+		ti.Start()
+
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+
+		cont := true
+		go func() {
+			go func() {
+				for cont {
+					hObj := fnv.New32()
+					n, err = hObj.Write(testload)
+					if err != nil {
+						t.logger.Info(err)
+					}
+					r = hObj.Sum(nil)
+
+					counter++
+				}
+			}()
+
+			time.Sleep(1 * time.Second)
+			wg.Done()
+		}()
+
+		wg.Wait()
+		cont = false
+		count := counter
+
+		ti.Stop()
+		t.logger.Infof("- %v:%x", n, r)
+		t.logger.Infof("time: %v", ti.Result())
+		t.logger.Infof("count: %v", count)
+	}
+
+	{
+		t.logger.Info("---\n FNV-1 32a")
+		var (
+			n       int
+			r       []byte
+			err     error
+			counter uint64
+		)
+		ti.Start()
+
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+
+		cont := true
+		go func() {
+			go func() {
+				for cont {
+					hObj := fnv.New32a()
+					n, err = hObj.Write(testload)
+					if err != nil {
+						t.logger.Info(err)
+					}
+					r = hObj.Sum(nil)
+
+					counter++
+				}
+			}()
+
+			time.Sleep(1 * time.Second)
+			wg.Done()
+		}()
+
+		wg.Wait()
+		cont = false
+		count := counter
+
+		ti.Stop()
+		t.logger.Infof("- %v:%x", n, r)
+		t.logger.Infof("time: %v", ti.Result())
+		t.logger.Infof("count: %v", count)
+	}
+
+	{
+		t.logger.Info("---\n FNV-1 64")
+		var (
+			n       int
+			r       []byte
+			err     error
+			counter uint64
+		)
+		ti.Start()
+
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+
+		cont := true
+		go func() {
+			go func() {
+				for cont {
+					hObj := fnv.New64()
+					n, err = hObj.Write(testload)
+					if err != nil {
+						t.logger.Info(err)
+					}
+					r = hObj.Sum(nil)
+
+					counter++
+				}
+			}()
+
+			time.Sleep(1 * time.Second)
+			wg.Done()
+		}()
+
+		wg.Wait()
+		cont = false
+		count := counter
+
+		ti.Stop()
+		t.logger.Infof("- %v:%x", n, r)
+		t.logger.Infof("time: %v", ti.Result())
+		t.logger.Infof("count: %v", count)
+	}
+
+	{
+		t.logger.Info("---\n FNV-1 64a")
+		var (
+			n       int
+			r       []byte
+			err     error
+			counter uint64
+		)
+		ti.Start()
+
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+
+		cont := true
+		go func() {
+			go func() {
+				for cont {
+					hObj := fnv.New64a()
+					n, err = hObj.Write(testload)
+					if err != nil {
+						t.logger.Info(err)
+					}
+					r = hObj.Sum(nil)
+
+					counter++
+				}
+			}()
+
+			time.Sleep(1 * time.Second)
+			wg.Done()
+		}()
+
+		wg.Wait()
+		cont = false
+		count := counter
+
+		ti.Stop()
+		t.logger.Infof("- %v:%x", n, r)
+		t.logger.Infof("time: %v", ti.Result())
+		t.logger.Infof("count: %v", count)
+	}
+
+	{
+		t.logger.Info("---\n FNV-1 128")
+		var (
+			n       int
+			r       []byte
+			err     error
+			counter uint64
+		)
+		ti.Start()
+
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+
+		cont := true
+		go func() {
+			go func() {
+				for cont {
+					hObj := fnv.New128()
+					n, err = hObj.Write(testload)
+					if err != nil {
+						t.logger.Info(err)
+					}
+					r = hObj.Sum(nil)
+
+					counter++
+				}
+			}()
+
+			time.Sleep(1 * time.Second)
+			wg.Done()
+		}()
+
+		wg.Wait()
+		cont = false
+		count := counter
+
+		ti.Stop()
+		t.logger.Infof("- %v:%x", n, r)
+		t.logger.Infof("time: %v", ti.Result())
+		t.logger.Infof("count: %v", count)
+	}
+
+	{
+		t.logger.Info("---\n FNV-1 128a")
+		var (
+			n       int
+			r       []byte
+			err     error
+			counter uint64
+		)
+		ti.Start()
+
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+
+		cont := true
+		go func() {
+			go func() {
+				for cont {
+					hObj := fnv.New128a()
 					n, err = hObj.Write(testload)
 					if err != nil {
 						t.logger.Info(err)
