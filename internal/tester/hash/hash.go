@@ -32,7 +32,7 @@ func (t *Tester) Run() {
 	ti := timer.Timer{}
 
 	{
-		t.logger.Info("---\nstart Adler32")
+		t.logger.Info("---\n Adler32")
 		var (
 			n       int
 			r       []byte
@@ -69,53 +69,91 @@ func (t *Tester) Run() {
 
 		ti.Stop()
 		t.logger.Infof("- %v:%x", n, r)
-		t.logger.Infof("time Adler32: %v", ti.Result())
-		t.logger.Infof("count Adler32: %v", count)
+		t.logger.Infof("time: %v", ti.Result())
+		t.logger.Infof("count: %v", count)
 	}
 
 	{
-		t.logger.Info("start CRC32")
+		t.logger.Info("---\n CRC32")
 		var (
-			n   int
-			r   []byte
-			err error
+			n       int
+			r       []byte
+			err     error
+			counter uint64
 		)
 		ti.Start()
 
-		for i := 0; i < 10240; i++ {
-			hObj := crc32.New(crc32.IEEETable)
-			n, err = hObj.Write(testload)
-			if err != nil {
-				t.logger.Info(err)
-			}
-			r = hObj.Sum(nil)
-		}
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+
+		cont := true
+		go func() {
+			go func() {
+				for cont {
+					hObj := crc32.New(crc32.IEEETable)
+					n, err = hObj.Write(testload)
+					if err != nil {
+						t.logger.Info(err)
+					}
+					r = hObj.Sum(nil)
+
+					counter++
+				}
+			}()
+
+			time.Sleep(1 * time.Second)
+			wg.Done()
+		}()
+
+		wg.Wait()
+		cont = false
+		count := counter
 
 		ti.Stop()
 		t.logger.Infof("- %v:%x", n, r)
-		t.logger.Infof("result CRC32: %v", ti.Result())
+		t.logger.Infof("time: %v", ti.Result())
+		t.logger.Infof("count: %v", count)
 	}
 
 	{
-		t.logger.Info("start CRC64")
+		t.logger.Info("---\n CRC64")
 		var (
-			n   int
-			r   []byte
-			err error
+			n       int
+			r       []byte
+			err     error
+			counter uint64
 		)
 		ti.Start()
 
-		for i := 0; i < 10240; i++ {
-			hObj := crc64.New(crc64.MakeTable(crc64.ISO))
-			n, err = hObj.Write(testload)
-			if err != nil {
-				t.logger.Info(err)
-			}
-			r = hObj.Sum(nil)
-		}
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+
+		cont := true
+		go func() {
+			go func() {
+				for cont {
+					hObj := crc64.New(crc64.MakeTable(crc64.ISO))
+					n, err = hObj.Write(testload)
+					if err != nil {
+						t.logger.Info(err)
+					}
+					r = hObj.Sum(nil)
+
+					counter++
+				}
+			}()
+
+			time.Sleep(1 * time.Second)
+			wg.Done()
+		}()
+
+		wg.Wait()
+		cont = false
+		count := counter
 
 		ti.Stop()
 		t.logger.Infof("- %v:%x", n, r)
-		t.logger.Infof("result CRC64: %v", ti.Result())
+		t.logger.Infof("time: %v", ti.Result())
+		t.logger.Infof("count: %v", count)
 	}
 }
