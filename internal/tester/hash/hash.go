@@ -7,6 +7,8 @@ import (
 	"hash/adler32"
 	"hash/crc32"
 	"hash/crc64"
+	"sync"
+	"time"
 )
 
 type Tester struct {
@@ -30,26 +32,45 @@ func (t *Tester) Run() {
 	ti := timer.Timer{}
 
 	{
-		t.logger.Info("start Adler32")
+		t.logger.Info("---\nstart Adler32")
 		var (
-			n   int
-			r   []byte
-			err error
+			n       int
+			r       []byte
+			err     error
+			counter uint64
 		)
 		ti.Start()
 
-		for i := 0; i < 10240; i++ {
-			hObj := adler32.New()
-			n, err = hObj.Write(testload)
-			if err != nil {
-				t.logger.Info(err)
-			}
-			r = hObj.Sum(nil)
-		}
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+
+		cont := true
+		go func() {
+			go func() {
+				for cont {
+					hObj := adler32.New()
+					n, err = hObj.Write(testload)
+					if err != nil {
+						t.logger.Info(err)
+					}
+					r = hObj.Sum(nil)
+
+					counter++
+				}
+			}()
+
+			time.Sleep(1 * time.Second)
+			wg.Done()
+		}()
+
+		wg.Wait()
+		cont = false
+		count := counter
 
 		ti.Stop()
 		t.logger.Infof("- %v:%x", n, r)
-		t.logger.Infof("result Adler32: %v", ti.Result())
+		t.logger.Infof("time Adler32: %v", ti.Result())
+		t.logger.Infof("count Adler32: %v", count)
 	}
 
 	{
