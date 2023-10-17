@@ -2,6 +2,7 @@ package hash
 
 import (
 	"crypto/md5"
+	"crypto/sha512"
 	"github.com/pinguinens/funny-go-benchmark/internal/buffer"
 	"github.com/pinguinens/funny-go-benchmark/pkg/log"
 	"github.com/pinguinens/funny-go-benchmark/pkg/timer"
@@ -429,6 +430,48 @@ func (t *Tester) Run() {
 			go func() {
 				for cont {
 					hObj := md5.New()
+					n, err = hObj.Write(testload)
+					if err != nil {
+						t.logger.Info(err)
+					}
+					r = hObj.Sum(nil)
+
+					counter++
+				}
+			}()
+
+			time.Sleep(1 * time.Second)
+			wg.Done()
+		}()
+
+		wg.Wait()
+		cont = false
+		count := counter
+
+		ti.Stop()
+		t.logger.Infof("- %v:%x", n, r)
+		t.logger.Infof("time: %v", ti.Result())
+		t.logger.Infof("count: %v", count)
+	}
+
+	{
+		t.logger.Info("---\n SHA-512")
+		var (
+			n       int
+			r       []byte
+			err     error
+			counter uint64
+		)
+		ti.Start()
+
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+
+		cont := true
+		go func() {
+			go func() {
+				for cont {
+					hObj := sha512.New()
 					n, err = hObj.Write(testload)
 					if err != nil {
 						t.logger.Info(err)
