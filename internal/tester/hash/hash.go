@@ -32,7 +32,8 @@ func New(logger *log.Logger, buffer *buffer.Buffer, routines int) *Tester {
 }
 
 func (t *Tester) Run() {
-	t.logger.Info("Hash Test...")
+	t.logger.Infoln("Hash Test...")
+	t.logger.Infoln("hash | time | hash rate | - byte count:hash string")
 
 	testload := payload.New()
 
@@ -50,7 +51,7 @@ func (t *Tester) Run() {
 }
 
 func (t *Tester) execute(ts Test, data []byte) {
-	t.logger.Infof("---%v\n", ts.Name())
+	t.logger.Infof("%v | ", ts.Name())
 	var (
 		n       int
 		r       []byte
@@ -68,7 +69,7 @@ func (t *Tester) execute(ts Test, data []byte) {
 			for cont {
 				n, r, err = ts.Exec(data)
 				if err != nil {
-					t.logger.Info(err)
+					t.logger.Infoln(err)
 				}
 
 				counter++
@@ -84,7 +85,5 @@ func (t *Tester) execute(ts Test, data []byte) {
 	count := counter
 
 	t.timer.Stop()
-	t.logger.Infof("- %v:%x", n, r)
-	t.logger.Infof("time: %v", t.timer.Result())
-	t.logger.Infof("count: %v", count)
+	t.logger.Infof("%v | %v | - %v:%x\n", t.timer.Result(), count, n, r)
 }

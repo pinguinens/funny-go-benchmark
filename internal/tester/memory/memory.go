@@ -38,11 +38,11 @@ func makeWorkers(bs, rcount int) []*Worker {
 }
 
 func (t *Tester) Run() {
-	t.logger.Info("Memory Test...")
-	t.logger.Infof("CPU count: %v", len(t.workers))
+	t.logger.Infoln("Memory Test...")
+	t.logger.Infolnf("CPU count: %v", len(t.workers))
 
 	bs, unit := units.FormatPrettyBytes(t.buffer.Size() * units.Kilobyte)
-	t.logger.Infof("target buffer size: %.2f %v", bs, unit)
+	t.logger.Infolnf("target buffer size: %.2f %v", bs, unit)
 
 	timer1 := timer.Timer{}
 	timer1.Start()
@@ -55,7 +55,7 @@ func (t *Tester) Run() {
 			defer wg.Done()
 
 			bs, unit := units.FormatPrettyBytes(wrk.BufferCap() * units.Kilobyte)
-			t.logger.Infof("[%v] target routine buffer size: %.2f %v", wrk.ID(), bs, unit)
+			t.logger.Infolnf("[%v] target routine buffer size: %.2f %v", wrk.ID(), bs, unit)
 
 			results <- wrk.Run(t.buffer)
 		}(w)
@@ -69,12 +69,12 @@ func (t *Tester) Run() {
 
 		for wr := range results {
 			bs, unit := units.FormatPrettyBytes(wr.BufferSize())
-			t.logger.Infof("[%v] routine buffer size: %.2f %v", wr.WorkerID(), bs, unit)
+			t.logger.Infolnf("[%v] routine buffer size: %.2f %v", wr.WorkerID(), bs, unit)
 			resultBufSize += wr.BufferSize()
 		}
 
 		bs, unit = units.FormatPrettyBytes(resultBufSize)
-		t.logger.Infof("total buffer size: %.2f %v", bs, unit)
+		t.logger.Infolnf("total buffer size: %.2f %v", bs, unit)
 	}()
 
 	wg.Wait()
@@ -82,6 +82,6 @@ func (t *Tester) Run() {
 	wgB.Wait()
 	timer1.Stop()
 
-	t.logger.Infof("test duration: %v", timer1.Result())
-	t.logger.Info("Memory Test finished")
+	t.logger.Infolnf("test duration: %v", timer1.Result())
+	t.logger.Infoln("Memory Test finished")
 }

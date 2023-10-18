@@ -10,7 +10,7 @@ import (
 func main() {
 	appCfg := config.New()
 	logger := log.Logger{}
-	logger.Info("== Funny Go Benchmark v.0.2 ==")
+	logger.Infoln("== Funny Go Benchmark v.0.2 ==")
 
 	rn := runner.New(appCfg)
 	//test := memory.New(&logger, rn.Buffer(), appCfg.System.CoreCount)
