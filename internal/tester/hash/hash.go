@@ -36,6 +36,8 @@ func (t *Tester) Run() {
 	t.logger.Infoln("hash | time | hash rate | - byte count:hash string")
 
 	testload := payload.New()
+	ti := timer.Timer{}
+	ti.Start()
 
 	t.execute(&test.Adler32{}, testload)
 	t.execute(&test.CRC32{}, testload)
@@ -48,6 +50,12 @@ func (t *Tester) Run() {
 	t.execute(&test.FNV128a{}, testload)
 	t.execute(&test.MD5{}, testload)
 	t.execute(&test.SHA512{}, testload)
+	t.execute(&test.AES128{}, testload)
+	t.execute(&test.AES192{}, testload)
+	t.execute(&test.AES256{}, testload)
+
+	ti.Stop()
+	t.logger.Infolnf("elapsed time: %v", ti.Result())
 }
 
 func (t *Tester) execute(ts Test, data []byte) {
