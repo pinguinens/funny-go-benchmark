@@ -3,120 +3,81 @@ package hash
 import (
 	"crypto/md5"
 	"crypto/sha512"
-	"github.com/pinguinens/funny-go-benchmark/internal/buffer"
-	"github.com/pinguinens/funny-go-benchmark/pkg/log"
-	"github.com/pinguinens/funny-go-benchmark/pkg/timer"
-	"hash/adler32"
-	"hash/crc32"
 	"hash/crc64"
 	"hash/fnv"
 	"sync"
 	"time"
+
+	"github.com/pinguinens/funny-go-benchmark/pkg/log"
+	"github.com/pinguinens/funny-go-benchmark/pkg/timer"
+
+	"github.com/pinguinens/funny-go-benchmark/internal/buffer"
+	"github.com/pinguinens/funny-go-benchmark/internal/tester/hash/payload"
+	"github.com/pinguinens/funny-go-benchmark/internal/tester/hash/test"
 )
 
 type Tester struct {
 	logger *log.Logger
 	buffer *buffer.Buffer
+	timer  *timer.Timer
 }
 
 func New(logger *log.Logger, buffer *buffer.Buffer, routines int) *Tester {
 	return &Tester{
 		logger: logger,
 		buffer: buffer,
+		timer:  &timer.Timer{},
 	}
+}
+
+func (t *Tester) execute(data []byte) {
+	t.logger.Info("---\n CRC32")
+	var (
+		n       int
+		r       []byte
+		err     error
+		counter uint64
+	)
+	t.timer.Start()
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	cont := true
+	go func() {
+		go func() {
+			for cont {
+				n, r, err = test.CRC32(data)
+				if err != nil {
+					t.logger.Info(err)
+				}
+
+				counter++
+			}
+		}()
+
+		time.Sleep(1 * time.Second)
+		wg.Done()
+	}()
+
+	wg.Wait()
+	cont = false
+	count := counter
+
+	t.timer.Stop()
+	t.logger.Infof("- %v:%x", n, r)
+	t.logger.Infof("time: %v", t.timer.Result())
+	t.logger.Infof("count: %v", count)
 }
 
 func (t *Tester) Run() {
 	t.logger.Info("Hash Test...")
 
-	uuid := []byte("628aace1-ad98-4f44-8a5c-cb73862c46c4")
-	payload := []byte{123, 34, 116, 97, 115, 107, 34, 58, 34, 116, 101, 115, 116, 34, 125}
-	testload := append(uuid, payload...)
+	testload := payload.New()
 	ti := timer.Timer{}
 
-	{
-		t.logger.Info("---\n Adler32")
-		var (
-			n       int
-			r       []byte
-			err     error
-			counter uint64
-		)
-		ti.Start()
-
-		wg := sync.WaitGroup{}
-		wg.Add(1)
-
-		cont := true
-		go func() {
-			go func() {
-				for cont {
-					hObj := adler32.New()
-					n, err = hObj.Write(testload)
-					if err != nil {
-						t.logger.Info(err)
-					}
-					r = hObj.Sum(nil)
-
-					counter++
-				}
-			}()
-
-			time.Sleep(1 * time.Second)
-			wg.Done()
-		}()
-
-		wg.Wait()
-		cont = false
-		count := counter
-
-		ti.Stop()
-		t.logger.Infof("- %v:%x", n, r)
-		t.logger.Infof("time: %v", ti.Result())
-		t.logger.Infof("count: %v", count)
-	}
-
-	{
-		t.logger.Info("---\n CRC32")
-		var (
-			n       int
-			r       []byte
-			err     error
-			counter uint64
-		)
-		ti.Start()
-
-		wg := sync.WaitGroup{}
-		wg.Add(1)
-
-		cont := true
-		go func() {
-			go func() {
-				for cont {
-					hObj := crc32.New(crc32.IEEETable)
-					n, err = hObj.Write(testload)
-					if err != nil {
-						t.logger.Info(err)
-					}
-					r = hObj.Sum(nil)
-
-					counter++
-				}
-			}()
-
-			time.Sleep(1 * time.Second)
-			wg.Done()
-		}()
-
-		wg.Wait()
-		cont = false
-		count := counter
-
-		ti.Stop()
-		t.logger.Infof("- %v:%x", n, r)
-		t.logger.Infof("time: %v", ti.Result())
-		t.logger.Infof("count: %v", count)
-	}
+	test.Adler32(t.logger, &ti, testload)
+	t.execute(testload)
 
 	{
 		t.logger.Info("---\n CRC64")
